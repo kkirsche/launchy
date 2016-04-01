@@ -20,6 +20,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,6 +53,7 @@ command is the equivalent command ls followed by:
 			servicesPaths = append(servicesPaths, user.HomeDir+"/Library/LaunchDaemons")
 		}
 
+		globalizedArgs = args
 		for _, path := range servicesPaths {
 			verbosePrintf("# Walking path %s", path)
 			filepath.Walk(path, walkPathAction)
@@ -80,6 +82,9 @@ func walkPathAction(path string, info os.FileInfo, err error) error {
 	}
 
 	userRegexpString := viper.GetString("regexp")
+	if userRegexpString == "" && len(globalizedArgs) > 0 {
+		userRegexpString = strings.Join(globalizedArgs, `\s`)
+	}
 
 	// Make sure we only grab plist files
 	if hasPlistExtension(path) {

@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -28,13 +29,10 @@ import (
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "View a process statuses list",
+	Long: `View a list of process statuses which can be filtered using a regular
+expression. If the process is active, it will also include the PID and label for
+the process.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		launchCmd := exec.Command("launchctl", "list")
 		stdout, err := launchCmd.StdoutPipe()
@@ -48,18 +46,24 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 
+		globalizedArgs = args
 		userRegexpString := viper.GetString("regexp")
+		if userRegexpString == "" && len(globalizedArgs) > 0 {
+			userRegexpString = strings.Join(globalizedArgs, `\s`)
+		}
 
 		// read command's stdout line by line
 		in := bufio.NewScanner(stdout)
-		in.Scan() // remove the header
-		fmt.Println("PID\tStatus\tLabel")
+		if in.Scan() {
+			fmt.Println(in.Text()) // Headers we want to print separately if they are there
+		}
+
 		for in.Scan() {
 			// Check if we need to worry about what the titles of them are
 			if userRegexpString != "" {
 				userRegexp, err := regexp.Compile(userRegexpString)
 				if err != nil {
-					fmt.Printf("Could not compile regular expression: `%s` due to an error: %s\n", userRegexpString, err.Error())
+					fmt.Printf("Could not compile regular expression '%s' with error %s.\n", userRegexpString, err.Error())
 					os.Exit(1)
 				}
 				matchIndex := userRegexp.FindStringIndex(in.Text())
@@ -70,6 +74,8 @@ to quickly create a Cobra application.`,
 				fmt.Println(in.Text())
 			}
 		}
+
+		launchCmd.Wait()
 	},
 }
 
