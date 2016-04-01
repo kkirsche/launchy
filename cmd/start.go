@@ -16,9 +16,18 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var loadMatches []string
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
@@ -31,8 +40,51 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("start called")
+		user, err := user.Current()
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
+		servicesPaths := []string{
+			"/Library/LaunchAgents",
+			user.HomeDir + "/Library/LaunchAgents",
+		}
+
+		if user.Username == "root" {
+			servicesPaths = append(servicesPaths, "/Library/LaunchDaemons")
+			servicesPaths = append(servicesPaths, user.HomeDir+"/Library/LaunchDaemons")
+		}
+
+		launchCmd := exec.Command("launchctl", "load")
+
+		if force {
+			launchCmd.Args = append(launchCmd.Args, "F")
+		}
+
+		if enable {
+			launchCmd.Args = append(launchCmd.Args, "w")
+		}
+
+		globalizedArgs = args
+		for _, path := range servicesPaths {
+			verbosePrintf("# Walking path %s", path)
+			filepath.Walk(path, launchDuringWalk)
+		}
+
+		if len(loadMatches) > 1 {
+			fmt.Println("More than one service matched. Cannot start multiple services. Exiting...")
+		}
+
+		launchCmd.Args = append(launchCmd.Args, loadMatches...)
+
+		err = launchCmd.Run()
+		if err != nil {
+			fmt.Printf("Could not start services: %s\n due to error: %s", strings.Join(loadMatches, "\n"), err.Error())
+			os.Exit(1)
+		}
+
+		fmt.Printf("Service %s started correctly.\n", filepath.Base(strings.Join(loadMatches, "")))
 	},
 }
 
@@ -47,6 +99,29 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	startCmd.Flags().BoolVarP(&force, "force", "f", false, "Forcibly start the service.")
+	viper.BindPFlag("force", startCmd.Flags().Lookup("force"))
 
+	startCmd.Flags().BoolVarP(&enable, "enable", "e", false, "If the service is disabled, it will be enabled.")
+	viper.BindPFlag("enable", startCmd.Flags().Lookup("enable"))
+}
+
+func launchDuringWalk(path string, info os.FileInfo, err error) error {
+	userRegexpString := viper.GetString("regexp")
+	if userRegexpString == "" && len(globalizedArgs) > 0 {
+		userRegexpString = strings.Join(globalizedArgs, `\s`)
+	}
+
+	userRegexp, err := regexp.Compile(userRegexpString)
+	if err != nil {
+		return fmt.Errorf("Could not compile regular expression '%s' with error %s.\n", userRegexpString, err.Error())
+	}
+
+	match := userRegexp.FindStringIndex(path)
+	if match != nil {
+		verbosePrintf("Found matching service: %s.\n", path)
+		loadMatches = append(loadMatches, path)
+	}
+
+	return nil
 }
