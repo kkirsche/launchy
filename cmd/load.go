@@ -79,13 +79,18 @@ to quickly create a Cobra application.`,
 
 		launchCmd.Args = append(launchCmd.Args, loadMatches...)
 
-		err = launchCmd.Run()
+		output, err := launchCmd.Output()
 		if err != nil {
-			stdPrintf("Could not load services due to error: %s", err.Error())
-			os.Exit(1)
+			stdPrintf("Could not launch command with error %s.", err.Error())
 		}
 
-		stdPrintf("Service %s loaded correctly.", filepath.Base(loadMatches[0]))
+		regex := regexp.MustCompile(`service already loaded`)
+		match := regex.FindIndex(output)
+		if match != nil {
+			stdPrintf("Service %s already loaded. Coul not reload", filepath.Base(loadMatches[0]))
+		} else {
+			stdPrintf("Service %s loaded.", filepath.Base(loadMatches[0]))
+		}
 	},
 }
 
