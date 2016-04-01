@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // statusCmd represents the status command
@@ -42,16 +44,32 @@ to quickly create a Cobra application.`,
 		}
 
 		if err = launchCmd.Start(); err != nil {
-			fmt.Printf("Could not start launchctl with error: %s.\n", err.Error())
+			fmt.Printf("Could not start 'launchctl list' with error: %s.\n", err.Error())
 			os.Exit(1)
 		}
 
+		userRegexpString := viper.GetString("regexp")
+
 		// read command's stdout line by line
 		in := bufio.NewScanner(stdout)
+		in.Scan() // remove the header
+		fmt.Println("PID\tStatus\tLabel")
 		for in.Scan() {
-			fmt.Println(in.Text())
+			// Check if we need to worry about what the titles of them are
+			if userRegexpString != "" {
+				userRegexp, err := regexp.Compile(userRegexpString)
+				if err != nil {
+					fmt.Printf("Could not compile regular expression: `%s` due to an error: %s\n", userRegexpString, err.Error())
+					os.Exit(1)
+				}
+				matchIndex := userRegexp.FindStringIndex(in.Text())
+				if matchIndex != nil {
+					fmt.Println(in.Text())
+				}
+			} else {
+				fmt.Println(in.Text())
+			}
 		}
-
 	},
 }
 
@@ -62,7 +80,8 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// statusCmd.PersistentFlags().String("foo", "", "A help for foo")
+	statusCmd.PersistentFlags().StringP("regexp", "r", "", "A regex to match filenames against")
+	viper.BindPFlag("regexp", statusCmd.PersistentFlags().Lookup("regexp"))
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
