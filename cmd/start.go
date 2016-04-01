@@ -42,7 +42,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		user, err := user.Current()
 		if err != nil {
-			fmt.Println(err.Error())
+			stdPrintf(err.Error())
 			os.Exit(1)
 		}
 
@@ -59,32 +59,33 @@ to quickly create a Cobra application.`,
 		launchCmd := exec.Command("launchctl", "load")
 
 		if force {
-			launchCmd.Args = append(launchCmd.Args, "F")
+			launchCmd.Args = append(launchCmd.Args, "-F")
 		}
 
 		if enable {
-			launchCmd.Args = append(launchCmd.Args, "w")
+			launchCmd.Args = append(launchCmd.Args, "-w")
 		}
 
 		globalizedArgs = args
 		for _, path := range servicesPaths {
-			verbosePrintf("# Walking path %s", path)
+			verbosePrintf("Walking path %s", path)
 			filepath.Walk(path, launchDuringWalk)
 		}
 
 		if len(loadMatches) > 1 {
-			fmt.Println("More than one service matched. Cannot start multiple services. Exiting...")
+			stdPrintf("More than one service matched. Cannot start multiple services. Exiting...")
+			os.Exit(1)
 		}
 
 		launchCmd.Args = append(launchCmd.Args, loadMatches...)
 
 		err = launchCmd.Run()
 		if err != nil {
-			fmt.Printf("Could not start services: %s\n due to error: %s", strings.Join(loadMatches, "\n"), err.Error())
+			stdPrintf("Could not start services: %s\n due to error: %s", strings.Join(loadMatches, "\n"), err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Printf("Service %s started correctly.\n", filepath.Base(strings.Join(loadMatches, "")))
+		stdPrintf("Service %s started correctly.\n", filepath.Base(strings.Join(loadMatches, "")))
 	},
 }
 

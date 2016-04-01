@@ -55,7 +55,7 @@ command is the equivalent command ls followed by:
 
 		globalizedArgs = args
 		for _, path := range servicesPaths {
-			verbosePrintf("# Walking path %s", path)
+			verbosePrintf("Walking path %s", path)
 			filepath.Walk(path, walkPathAction)
 		}
 	},
@@ -97,10 +97,10 @@ func walkPathAction(path string, info os.FileInfo, err error) error {
 			}
 			matchIndex := userRegexp.FindStringIndex(info.Name())
 			if matchIndex != nil {
-				fmt.Println(info.Name()[:nameLength-6])
+				stdPrintf("%s", info.Name()[:nameLength-6])
 			}
 		} else {
-			fmt.Println(info.Name()[:nameLength-6])
+			stdPrintf("%s", info.Name()[:nameLength-6])
 		}
 	}
 	return nil

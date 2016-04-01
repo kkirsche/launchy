@@ -22,8 +22,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var globalizedArgs []string
+
 var cfgFile string
+
 var verbose bool
+var force bool
+var enable bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -84,6 +89,10 @@ func initConfig() {
 
 func verbosePrintf(format string, v ...interface{}) {
 	if verbose {
-		fmt.Printf(format+"\n", v)
+		fmt.Printf("[launchy verbose] "+format+"\n", v)
 	}
+}
+
+func stdPrintf(format string, v ...interface{}) {
+	fmt.Printf("[launchy] "+format+"\n", v)
 }
