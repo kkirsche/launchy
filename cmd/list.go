@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/kkirsche/launchy/lib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -55,10 +56,39 @@ command is the equivalent command ls followed by:
 
 		globalizedArgs = args
 		for _, path := range servicesPaths {
-			verbosePrintf("Walking path %s", path)
-			filepath.Walk(path, walkPathAction)
+			logger.VerbosePrintf("Walking path %s", path)
+			filepath.Walk(path, list)
 		}
 	},
+}
+
+func list(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+
+	// Make sure we only grab plist files
+	if launchy.DoesFileHavePlistExtension(path) {
+		nameLength := len(info.Name())
+		userRegexpString := viper.GetString("regexp")
+		if userRegexpString == "" && len(globalizedArgs) > 0 {
+			userRegexpString = strings.Join(globalizedArgs, `\s`)
+		}
+		// Check if we need to worry about what the titles of them are
+		if launchy.IsTextProvided(userRegexpString) {
+			userRegexp, err := regexp.Compile(userRegexpString)
+			if err != nil {
+				return fmt.Errorf("Could not compile regular expression: `%s` due to an error: %s\n", userRegexpString, err.Error())
+			}
+			matchIndex := userRegexp.FindStringIndex(info.Name())
+			if matchIndex != nil {
+				logger.Printf("%s", info.Name()[:nameLength-6])
+			}
+		} else {
+			logger.Printf("%s", info.Name()[:nameLength-6])
+		}
+	}
+	return nil
 }
 
 func init() {
@@ -67,55 +97,11 @@ func init() {
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
-	// // and all subcommands, e.g.:
+	// and all subcommands, e.g.:
 	// listCmd.PersistentFlags().StringP("regexp", "r", "", "A regex to match filenames against")
 	// viper.BindPFlag("regexp", listCmd.PersistentFlags().Lookup("regexp"))
+
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-}
-
-func walkPathAction(path string, info os.FileInfo, err error) error {
-	if err != nil {
-		return err
-	}
-
-	userRegexpString := viper.GetString("regexp")
-	if userRegexpString == "" && len(globalizedArgs) > 0 {
-		userRegexpString = strings.Join(globalizedArgs, `\s`)
-	}
-
-	// Make sure we only grab plist files
-	if hasPlistExtension(path) {
-		nameLength := len(info.Name())
-		// Check if we need to worry about what the titles of them are
-		if hasRegexpProvided(userRegexpString) {
-			userRegexp, err := regexp.Compile(userRegexpString)
-			if err != nil {
-				return fmt.Errorf("Could not compile regular expression: `%s` due to an error: %s\n", userRegexpString, err.Error())
-			}
-			matchIndex := userRegexp.FindStringIndex(info.Name())
-			if matchIndex != nil {
-				stdPrintf("%s", info.Name()[:nameLength-6])
-			}
-		} else {
-			stdPrintf("%s", info.Name()[:nameLength-6])
-		}
-	}
-	return nil
-}
-
-func hasPlistExtension(path string) bool {
-	if filepath.Ext(path) == ".plist" {
-		return true
-	}
-	return false
-}
-
-func hasRegexpProvided(provided string) bool {
-	if provided != "" {
-		return true
-	}
-	return false
 }

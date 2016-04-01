@@ -42,7 +42,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		user, err := user.Current()
 		if err != nil {
-			stdPrintf(err.Error())
+			logger.ErrorPrintf(err.Error())
 			os.Exit(1)
 		}
 
@@ -68,12 +68,12 @@ to quickly create a Cobra application.`,
 
 		globalizedArgs = args
 		for _, path := range servicesPaths {
-			verbosePrintf("Walking path %s", path)
-			filepath.Walk(path, launchDuringWalk)
+			logger.VerbosePrintf("Walking path %s", path)
+			filepath.Walk(path, load)
 		}
 
 		if len(loadMatches) > 1 {
-			stdPrintf("More than one service matched. Cannot load multiple services. Exiting...")
+			logger.Printf("More than one service matched. Cannot load multiple services. Exiting...")
 			os.Exit(1)
 		}
 
@@ -81,15 +81,15 @@ to quickly create a Cobra application.`,
 
 		output, err := launchCmd.Output()
 		if err != nil {
-			stdPrintf("Could not launch command with error %s.", err.Error())
+			logger.Printf("Could not launch command with error %s.", err.Error())
 		}
 
 		regex := regexp.MustCompile(`service already loaded`)
 		match := regex.FindIndex(output)
 		if match != nil {
-			stdPrintf("Service %s already loaded. Coul not reload", filepath.Base(loadMatches[0]))
+			logger.Printf("Service %s already loaded. Coul not reload", filepath.Base(loadMatches[0]))
 		} else {
-			stdPrintf("Service %s loaded.", filepath.Base(loadMatches[0]))
+			logger.Printf("Service %s loaded.", filepath.Base(loadMatches[0]))
 		}
 	},
 }
@@ -112,7 +112,7 @@ func init() {
 	viper.BindPFlag("enable", loadCmd.Flags().Lookup("enable"))
 }
 
-func launchDuringWalk(path string, info os.FileInfo, err error) error {
+func load(path string, info os.FileInfo, err error) error {
 	userRegexpString := viper.GetString("regexp")
 	if userRegexpString == "" && len(globalizedArgs) > 0 {
 		userRegexpString = strings.Join(globalizedArgs, `\s`)
@@ -125,7 +125,7 @@ func launchDuringWalk(path string, info os.FileInfo, err error) error {
 
 	match := userRegexp.FindStringIndex(path)
 	if match != nil {
-		verbosePrintf("Found matching service: %s.\n", path)
+		logger.VerbosePrintf("Found matching service: %s.\n", path)
 		loadMatches = append(loadMatches, path)
 	}
 

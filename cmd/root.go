@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kkirsche/launchy/lib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,6 +30,7 @@ var cfgFile string
 var verbose bool
 var force bool
 var enable bool
+var logger *launchy.Logger
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -61,7 +63,7 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.launchy.yaml)")
+	// RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.launchy.yaml)")
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Execute commands in verbose mode")
@@ -69,6 +71,8 @@ func init() {
 
 	RootCmd.PersistentFlags().StringP("regexp", "r", "", "A regex to match filenames against")
 	viper.BindPFlag("regexp", RootCmd.PersistentFlags().Lookup("regexp"))
+
+	logger = launchy.NewLogger(os.Stdout, os.Stderr, verbose)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -85,14 +89,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		// fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func verbosePrintf(format string, v ...interface{}) {
-	if verbose {
-		fmt.Printf("[launchy verbose] "+format+"\n", v)
-	}
-}
-
-func stdPrintf(format string, v ...interface{}) {
-	fmt.Printf("[launchy] "+format+"\n", v)
 }
