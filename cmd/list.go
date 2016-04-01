@@ -28,13 +28,13 @@ import (
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List services which can be started using launchy or launchctl",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "List services which can be controlled using launchy or launchctl",
+	Long: `List services which can be controlled using launchy or launchtl. This
+command is the equivalent command ls followed by:
+	- ~/Library/LaunchAgents
+	- /Library/LaunchDaemons (root only)
+	- ~/Library/LaunchAgents
+	- ~/Library/LaunchDaemons (root only)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		user, err := user.Current()
 		if err != nil {
