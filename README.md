@@ -29,5 +29,11 @@ homebrew.mxcl.postgresql
 org.virtualbox.vboxwebsrv
 ```
 
+```shell
+~/go/src/github.com/kkirsche/launchy git:master ❯❯❯ launchy list -r "LittleSnitch"             ✱ ◼
+at.obdev.LittleSnitchUIAgent
+```
+
+
 ### Credit
 Shamelessly ripped off of https://github.com/eddiezane/lunchy
