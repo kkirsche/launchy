@@ -29,10 +29,10 @@ import (
 
 var loadMatches []string
 
-// startCmd represents the start command
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "A brief description of your command",
+// loadCmd represents the load command
+var loadCmd = &cobra.Command{
+	Use:   "load",
+	Short: "Load a service path",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
@@ -73,7 +73,7 @@ to quickly create a Cobra application.`,
 		}
 
 		if len(loadMatches) > 1 {
-			stdPrintf("More than one service matched. Cannot start multiple services. Exiting...")
+			stdPrintf("More than one service matched. Cannot load multiple services. Exiting...")
 			os.Exit(1)
 		}
 
@@ -81,30 +81,30 @@ to quickly create a Cobra application.`,
 
 		err = launchCmd.Run()
 		if err != nil {
-			stdPrintf("Could not start services: %s\n due to error: %s", strings.Join(loadMatches, "\n"), err.Error())
+			stdPrintf("Could not load services due to error: %s", err.Error())
 			os.Exit(1)
 		}
 
-		stdPrintf("Service %s started correctly.\n", filepath.Base(strings.Join(loadMatches, "")))
+		stdPrintf("Service %s loaded correctly.", filepath.Base(loadMatches[0]))
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(startCmd)
+	RootCmd.AddCommand(loadCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// loadCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	startCmd.Flags().BoolVarP(&force, "force", "f", false, "Forcibly start the service.")
-	viper.BindPFlag("force", startCmd.Flags().Lookup("force"))
+	loadCmd.Flags().BoolVarP(&force, "force", "f", false, "Forcibly load the service.")
+	viper.BindPFlag("force", loadCmd.Flags().Lookup("force"))
 
-	startCmd.Flags().BoolVarP(&enable, "enable", "e", false, "If the service is disabled, it will be enabled.")
-	viper.BindPFlag("enable", startCmd.Flags().Lookup("enable"))
+	loadCmd.Flags().BoolVarP(&enable, "enable", "e", false, "If the service is disabled, it will be enabled.")
+	viper.BindPFlag("enable", loadCmd.Flags().Lookup("enable"))
 }
 
 func launchDuringWalk(path string, info os.FileInfo, err error) error {
