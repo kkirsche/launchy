@@ -25,7 +25,7 @@ import (
 var cfgFile string
 var verbose bool
 
-// This represents the base command when called without any subcommands
+// RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "launchy",
 	Short: "A brief description of your application",
@@ -61,6 +61,9 @@ func init() {
 	// when this action is called directly.
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Execute commands in verbose mode")
 	viper.BindPFlag("verbose", RootCmd.Flags().Lookup("verbose"))
+
+	RootCmd.PersistentFlags().StringP("regexp", "r", "", "A regex to match filenames against")
+	viper.BindPFlag("regexp", RootCmd.PersistentFlags().Lookup("regexp"))
 }
 
 // initConfig reads in config file and ENV variables if set.
